@@ -49,6 +49,9 @@ export async function PUT(
 
     const { name, model, manufacturer, serial_number, purchase_date, status, description, photos } = body;
 
+    // 处理空字符串的日期字段
+    const processedPurchaseDate = purchase_date && purchase_date.trim() !== '' ? purchase_date : null;
+
     const { data, error } = await client
       .from('devices')
       .update({
@@ -56,7 +59,7 @@ export async function PUT(
         model,
         manufacturer,
         serial_number,
-        purchase_date,
+        purchase_date: processedPurchaseDate,
         status,
         description,
         photos,

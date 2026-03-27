@@ -53,6 +53,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 处理空字符串的日期字段
+    const processedPurchaseDate = purchase_date && purchase_date.trim() !== '' ? purchase_date : null;
+
     const { data, error } = await client
       .from('devices')
       .insert({
@@ -60,7 +63,7 @@ export async function POST(request: NextRequest) {
         model,
         manufacturer,
         serial_number,
-        purchase_date,
+        purchase_date: processedPurchaseDate,
         status: status || '正常',
         description,
         photos,
