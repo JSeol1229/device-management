@@ -12,6 +12,7 @@ import {
   FileText,
   Menu,
   X,
+  Download,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -27,6 +28,7 @@ const navItems = [
   { name: '保养记录', href: '/service', icon: ClipboardList },
   { name: '检测提醒', href: '/reminders', icon: Bell },
   { name: '月总结报告', href: '/reports', icon: FileText },
+  { name: '数据备份', href: '/backup', icon: Download },
 ];
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
