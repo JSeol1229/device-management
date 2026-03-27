@@ -58,7 +58,7 @@ export default function MaintenancePage() {
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [typeFilter, setTypeFilter] = useState<string>('');
+  const [typeFilter, setTypeFilter] = useState<string>('all');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<MaintenanceRecord | null>(null);
@@ -82,7 +82,7 @@ export default function MaintenancePage() {
     try {
       setLoading(true);
       const params = new URLSearchParams();
-      if (typeFilter) params.append('maintenance_type', typeFilter);
+      if (typeFilter && typeFilter !== 'all') params.append('maintenance_type', typeFilter);
       
       const response = await fetch(`/api/maintenance-records?${params.toString()}`);
       const data = await response.json();
@@ -268,7 +268,7 @@ export default function MaintenancePage() {
               <SelectValue placeholder="类型" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">全部</SelectItem>
+              <SelectItem value="all">全部</SelectItem>
               <SelectItem value="本厂维修">本厂维修</SelectItem>
               <SelectItem value="非本厂维修">非本厂维修</SelectItem>
             </SelectContent>

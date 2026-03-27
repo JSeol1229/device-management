@@ -56,7 +56,7 @@ export default function ServicePage() {
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [typeFilter, setTypeFilter] = useState<string>('');
+  const [typeFilter, setTypeFilter] = useState<string>('all');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<ServiceRecord | null>(null);
@@ -79,7 +79,7 @@ export default function ServicePage() {
     try {
       setLoading(true);
       const params = new URLSearchParams();
-      if (typeFilter) params.append('service_type', typeFilter);
+      if (typeFilter && typeFilter !== 'all') params.append('service_type', typeFilter);
       
       const response = await fetch(`/api/service-records?${params.toString()}`);
       const data = await response.json();
@@ -262,7 +262,7 @@ export default function ServicePage() {
               <SelectValue placeholder="类型" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">全部</SelectItem>
+              <SelectItem value="all">全部</SelectItem>
               <SelectItem value="本厂保养">本厂保养</SelectItem>
               <SelectItem value="非本厂保养">非本厂保养</SelectItem>
             </SelectContent>
