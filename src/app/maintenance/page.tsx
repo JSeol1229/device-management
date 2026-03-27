@@ -32,7 +32,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { S3Storage } from 'coze-coding-dev-sdk';
+import { ImageViewer, ClickableImage } from '@/components/ui/image-viewer';
 
 interface Device {
   id: number;
@@ -63,6 +63,9 @@ export default function MaintenancePage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<MaintenanceRecord | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [imageViewerOpen, setImageViewerOpen] = useState(false);
+  const [viewerImages, setViewerImages] = useState<string[]>([]);
+  const [viewerInitialIndex, setViewerInitialIndex] = useState(0);
   const [formData, setFormData] = useState({
     device_id: '',
     maintenance_type: '本厂维修',
@@ -238,6 +241,12 @@ export default function MaintenancePage() {
     setSelectedRecord(null);
   };
 
+  const openImageViewer = (photos: string[], index: number) => {
+    setViewerImages(photos);
+    setViewerInitialIndex(index);
+    setImageViewerOpen(true);
+  };
+
   const filteredRecords = records.filter((record) =>
     record.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
     record.devices?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -332,13 +341,13 @@ export default function MaintenancePage() {
                 {record.photos && record.photos.length > 0 && (
                   <div className="mt-3 flex gap-2 flex-wrap">
                     {record.photos.map((photo, index) => (
-                      <div key={index} className="w-20 h-20 rounded-lg overflow-hidden border">
-                        <img
-                          src={photo}
-                          alt={`照片 ${index + 1}`}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
+                      <ClickableImage
+                        key={index}
+                        src={photo}
+                        alt={`照片 ${index + 1}`}
+                        className="w-20 h-20 rounded-lg border"
+                        onClick={() => openImageViewer(record.photos, index)}
+                      />
                     ))}
                   </div>
                 )}
@@ -518,6 +527,14 @@ export default function MaintenancePage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* 图片查看器 */}
+      <ImageViewer
+        images={viewerImages}
+        initialIndex={viewerInitialIndex}
+        isOpen={imageViewerOpen}
+        onClose={() => setImageViewerOpen(false)}
+      />
     </div>
   );
 }

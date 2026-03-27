@@ -32,6 +32,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { ImageViewer, ClickableImage } from '@/components/ui/image-viewer';
 
 interface Device {
   id: number;
@@ -55,6 +56,9 @@ export default function DevicesPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [imageViewerOpen, setImageViewerOpen] = useState(false);
+  const [viewerImages, setViewerImages] = useState<string[]>([]);
+  const [viewerInitialIndex, setViewerInitialIndex] = useState(0);
   const [formData, setFormData] = useState({
     name: '',
     model: '',
@@ -219,6 +223,12 @@ export default function DevicesPage() {
     setSelectedDevice(null);
   };
 
+  const openImageViewer = (photos: string[], index: number) => {
+    setViewerImages(photos);
+    setViewerInitialIndex(index);
+    setImageViewerOpen(true);
+  };
+
   const filteredDevices = devices.filter(
     (device) =>
       device.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -319,16 +329,19 @@ export default function DevicesPage() {
                   {device.photos && device.photos.length > 0 && (
                     <div className="mt-2 flex gap-2 flex-wrap">
                       {device.photos.slice(0, 3).map((photo, index) => (
-                        <div key={index} className="w-16 h-16 rounded-lg overflow-hidden border">
-                          <img
-                            src={photo}
-                            alt={`照片 ${index + 1}`}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
+                        <ClickableImage
+                          key={index}
+                          src={photo}
+                          alt={`照片 ${index + 1}`}
+                          className="w-16 h-16 rounded-lg border"
+                          onClick={() => openImageViewer(device.photos, index)}
+                        />
                       ))}
                       {device.photos.length > 3 && (
-                        <div className="w-16 h-16 rounded-lg border flex items-center justify-center bg-gray-100 text-sm text-gray-600">
+                        <div 
+                          className="w-16 h-16 rounded-lg border flex items-center justify-center bg-gray-100 text-sm text-gray-600 cursor-pointer hover:bg-gray-200"
+                          onClick={() => openImageViewer(device.photos, 3)}
+                        >
                           +{device.photos.length - 3}
                         </div>
                       )}
@@ -521,6 +534,14 @@ export default function DevicesPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* 图片查看器 */}
+      <ImageViewer
+        images={viewerImages}
+        initialIndex={viewerInitialIndex}
+        isOpen={imageViewerOpen}
+        onClose={() => setImageViewerOpen(false)}
+      />
     </div>
   );
 }
