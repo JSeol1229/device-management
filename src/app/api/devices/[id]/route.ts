@@ -47,7 +47,7 @@ export async function PUT(
     const { id } = await params;
     const body = await request.json();
 
-    const { name, model, manufacturer, serial_number, purchase_date, status, description } = body;
+    const { name, model, manufacturer, serial_number, purchase_date, status, description, photos } = body;
 
     const { data, error } = await client
       .from('devices')
@@ -59,6 +59,7 @@ export async function PUT(
         purchase_date,
         status,
         description,
+        photos,
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)

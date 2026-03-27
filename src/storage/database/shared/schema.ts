@@ -15,6 +15,7 @@ export const devices = pgTable(
     purchase_date: timestamp("purchase_date", { withTimezone: true }),
     status: varchar("status", { length: 50 }).default("正常").notNull(),
     description: text("description"),
+    photos: jsonb("photos").$type<string[]>(), // 照片URL数组
     created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updated_at: timestamp("updated_at", { withTimezone: true }),
   },

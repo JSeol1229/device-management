@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     const client = getSupabaseClient();
     const body = await request.json();
 
-    const { name, model, manufacturer, serial_number, purchase_date, status, description } = body;
+    const { name, model, manufacturer, serial_number, purchase_date, status, description, photos } = body;
 
     if (!name || !manufacturer) {
       return NextResponse.json(
@@ -63,6 +63,7 @@ export async function POST(request: NextRequest) {
         purchase_date,
         status: status || '正常',
         description,
+        photos,
       })
       .select()
       .single();

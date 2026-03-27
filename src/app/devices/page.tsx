@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
-import { Plus, Pencil, Trash2, Search } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Upload, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -42,6 +42,7 @@ interface Device {
   purchase_date: string;
   status: string;
   description: string;
+  photos: string[];
   created_at: string;
 }
 
@@ -53,6 +54,7 @@ export default function DevicesPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     model: '',
@@ -61,6 +63,7 @@ export default function DevicesPage() {
     purchase_date: '',
     status: '正常',
     description: '',
+    photos: [] as string[],
   });
 
   useEffect(() => {
@@ -84,6 +87,51 @@ export default function DevicesPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const remainingSlots = 5 - formData.photos.length;
+    if (remainingSlots <= 0) {
+      alert('最多只能上传5张照片');
+      return;
+    }
+
+    const filesToUpload = Array.from(files).slice(0, remainingSlots);
+    
+    setUploading(true);
+    try {
+      const uploadFormData = new FormData();
+      filesToUpload.forEach(file => uploadFormData.append('files', file));
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: uploadFormData,
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setFormData({ ...formData, photos: [...formData.photos, ...data.data.urls] });
+        if (data.data.errors && data.data.errors.length > 0) {
+          alert(`部分文件上传失败: ${data.data.errors.join('; ')}`);
+        }
+      } else {
+        alert(data.error || '上传失败');
+      }
+    } catch (error) {
+      console.error('上传照片失败:', error);
+      alert('上传照片失败');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removePhoto = (index: number) => {
+    const newPhotos = formData.photos.filter((_, i) => i !== index);
+    setFormData({ ...formData, photos: newPhotos });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -147,6 +195,7 @@ export default function DevicesPage() {
       purchase_date: device.purchase_date ? device.purchase_date.split('T')[0] : '',
       status: device.status,
       description: device.description || '',
+      photos: device.photos || [],
     });
     setDialogOpen(true);
   };
@@ -165,6 +214,7 @@ export default function DevicesPage() {
       purchase_date: '',
       status: '正常',
       description: '',
+      photos: [],
     });
     setSelectedDevice(null);
   };
@@ -266,6 +316,24 @@ export default function DevicesPage() {
                       </span>
                     </div>
                   )}
+                  {device.photos && device.photos.length > 0 && (
+                    <div className="mt-2 flex gap-2 flex-wrap">
+                      {device.photos.slice(0, 3).map((photo, index) => (
+                        <div key={index} className="w-16 h-16 rounded-lg overflow-hidden border">
+                          <img
+                            src={photo}
+                            alt={`照片 ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ))}
+                      {device.photos.length > 3 && (
+                        <div className="w-16 h-16 rounded-lg border flex items-center justify-center bg-gray-100 text-sm text-gray-600">
+                          +{device.photos.length - 3}
+                        </div>
+                      )}
+                    </div>
+                  )}
                   {device.description && (
                     <div className="mt-2 pt-2 border-t">
                       <p className="text-gray-600 dark:text-gray-400 text-xs">
@@ -302,7 +370,7 @@ export default function DevicesPage() {
 
       {/* 添加/编辑设备对话框 */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{selectedDevice ? '编辑设备' : '添加设备'}</DialogTitle>
           </DialogHeader>
@@ -381,6 +449,44 @@ export default function DevicesPage() {
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 rows={3}
               />
+            </div>
+            <div className="space-y-2">
+              <Label>照片 (最多5张)</Label>
+              <div className="flex gap-2 flex-wrap">
+                {formData.photos.map((photo, index) => (
+                  <div key={index} className="relative w-20 h-20 rounded-lg overflow-hidden border">
+                    <img
+                      src={photo}
+                      alt={`照片 ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removePhoto(index)}
+                      className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+                {formData.photos.length < 5 && (
+                  <label className="w-20 h-20 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:border-gray-400 transition-colors">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handlePhotoUpload}
+                      className="hidden"
+                      disabled={uploading}
+                    />
+                    {uploading ? (
+                      <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent"></div>
+                    ) : (
+                      <Upload className="h-6 w-6 text-gray-400" />
+                    )}
+                  </label>
+                )}
+              </div>
             </div>
             <div className="flex justify-end gap-2 pt-4">
               <Button
