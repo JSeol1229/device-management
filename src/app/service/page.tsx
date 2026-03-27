@@ -131,7 +131,7 @@ export default function ServicePage() {
       const data = await response.json();
       
       if (data.success) {
-        setFormData({ ...formData, photos: [...formData.photos, ...data.data.keys] });
+        setFormData({ ...formData, photos: [...formData.photos, ...data.data.urls] });
         if (data.data.errors && data.data.errors.length > 0) {
           alert(`部分文件上传失败: ${data.data.errors.join('; ')}`);
         }

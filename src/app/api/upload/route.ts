@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { S3Storage } from 'coze-coding-dev-sdk';
+import { getSupabaseClient } from '@/storage/database/supabase-client';
 
-// POST - 上传照片（支持多张照片，自动压缩和限制）
+// POST - 上传照片到 Supabase Storage（支持多张照片，自动压缩和限制）
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
@@ -22,15 +22,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const storage = new S3Storage({
-      endpointUrl: process.env.COZE_BUCKET_ENDPOINT_URL,
-      accessKey: "",
-      secretKey: "",
-      bucketName: process.env.COZE_BUCKET_NAME,
-      region: "cn-beijing",
-    });
-
-    const uploadedKeys: string[] = [];
+    const client = getSupabaseClient();
+    const bucketName = 'photos'; // Supabase Storage bucket 名称
+    const uploadedUrls: string[] = [];
     const errors: string[] = [];
 
     for (const file of files) {
@@ -52,36 +46,40 @@ export async function POST(request: NextRequest) {
         const bytes = await file.arrayBuffer();
         const buffer = Buffer.from(bytes);
 
-        // 图片压缩处理（简单的质量压缩）
-        let compressedBuffer = buffer;
-        const quality = 0.8; // 压缩质量
-        
-        // 如果图片大于 1MB，进行压缩
-        if (buffer.length > 1024 * 1024) {
-          // 这里简化处理，实际应用中可以使用 sharp 等库进行专业压缩
-          // 由于环境限制，我们保持原样，但记录日志
-          console.log(`图片 ${file.name} 需要压缩，大小: ${buffer.length}`);
+        // 生成唯一文件名
+        const timestamp = Date.now();
+        const randomStr = Math.random().toString(36).substring(2, 8);
+        const fileExt = file.name.split('.').pop() || 'jpg';
+        const fileName = `${timestamp}_${randomStr}.${fileExt}`;
+        const filePath = `uploads/${fileName}`;
+
+        // 上传到 Supabase Storage
+        const { data, error } = await client.storage
+          .from(bucketName)
+          .upload(filePath, buffer, {
+            contentType: file.type,
+            upsert: false,
+          });
+
+        if (error) {
+          console.error(`上传文件 ${file.name} 失败:`, error);
+          errors.push(`文件 ${file.name} 上传失败: ${error.message}`);
+          continue;
         }
 
-        // 生成文件名
-        const timestamp = Date.now();
-        const fileName = `photos/${timestamp}_${file.name}`;
+        // 获取公开访问 URL
+        const { data: urlData } = client.storage
+          .from(bucketName)
+          .getPublicUrl(data.path);
 
-        // 上传到对象存储
-        const key = await storage.uploadFile({
-          fileContent: compressedBuffer,
-          fileName: fileName,
-          contentType: file.type,
-        });
-
-        uploadedKeys.push(key);
+        uploadedUrls.push(urlData.publicUrl);
       } catch (uploadError) {
         console.error(`上传文件 ${file.name} 失败:`, uploadError);
         errors.push(`文件 ${file.name} 上传失败`);
       }
     }
 
-    if (uploadedKeys.length === 0) {
+    if (uploadedUrls.length === 0) {
       return NextResponse.json(
         { 
           success: false, 
@@ -94,7 +92,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        keys: uploadedKeys,
+        urls: uploadedUrls,
         errors: errors.length > 0 ? errors : undefined,
       },
     });
